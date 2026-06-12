@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Chat — Personal Career Plan Agent{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <div class="chat-header">
+        <h1>💬 对话</h1>
+        <div class="upload-area">
+            <label for="file-upload" class="upload-btn">📎 上传文件</label>
+            <input type="file" id="file-upload" style="display:none" accept=".pdf,.docx,.doc,.md,.txt,.png,.jpg,.jpeg,.webp">
+            <select id="file-type-select">
+                <option value="resume">简历</option>
+                <option value="jd">JD</option>
+                <option value="notes">笔记</option>
+            </select>
+            <span id="upload-status"></span>
+        </div>
+    </div>
+
+    <div class="chat-messages" id="chat-messages">
+        <div class="message assistant">
+            <div class="message-content">
+                <p>你好！我是你的职业规划助手。我可以帮你：</p>
+                <ul>
+                    <li>📝 分析和优化简历</li>
+                    <li>🔍 匹配岗位 JD</li>
+                    <li>🎤 准备面试</li>
+                    <li>📊 梳理职业规划</li>
+                </ul>
+                <p>上传简历或直接告诉我想做什么吧～</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="chat-input-area">
+        <textarea id="chat-input" placeholder="输入你的问题..." rows="2"></textarea>
+        <button id="send-btn" onclick="sendMessage()">发送</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const messagesEl = document.getElementById('chat-messages');
+const inputEl = document.getElementById('chat-input');
+const sendBtn = document.getElementById('send-btn');
+
+// Enter 发送，Shift+Enter 换行
+inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+    }
+});
+
+async function sendMessage(prefill) {
+    const message = prefill || inputEl.value.trim();
+    if (!message) return;
+
+    // 显示用户消息
+    appendMessage('user', message);
+    inputEl.value = '';
+    sendBtn.disabled = true;
+
+    // 创建 assistant 消息气泡
+    const assistantBubble = appendMessage('assistant', '');
+    const assistantContent = assistantBubble.querySelector('.message-content');
+
+    try {
+        const response = await fetch('/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message }),
+        });
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const data = line.slice(6);
+                    if (data === '[DONE]') continue;
+                    assistantContent.innerHTML += data.replace(/\n/g, '<br>');
+                }
+            }
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
+        // 渲染 Markdown（简单的换行处理）
+        if (!assistantContent.innerHTML.trim()) {
+            assistantContent.innerHTML = '<em>（无回复）</em>';
+        }
+    } catch (e) {
+        assistantContent.innerHTML = `<span class="error">请求失败: ${e.message}</span>`;
+    }
+
+    sendBtn.disabled = false;
+    // 重新加载文件列表（可能有新生成的文件）
+    loadFiles();
+}
+
+function appendMessage(role, content) {
+    const div = document.createElement('div');
+    div.className = `message ${role}`;
+    div.innerHTML = `<div class="message-content">${content.replace(/\n/g, '<br>')}</div>`;
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    return div;
+}
+
+// 文件上传
+document.getElementById('file-upload').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('file_type', document.getElementById('file-type-select').value);
+
+    const statusEl = document.getElementById('upload-status');
+    statusEl.textContent = '上传中...';
+
+    try {
+        const resp = await fetch('/upload', { method: 'POST', body: formData });
+        const data = await resp.json();
+        if (resp.ok) {
+            statusEl.textContent = `✅ ${data.filename}`;
+            loadFiles();
+            // 自动将文件路径填入输入框
+            inputEl.value = `已上传文件: ${data.path}\n${inputEl.value}`;
+        } else {
+            statusEl.textContent = `❌ ${data.error}`;
+        }
+    } catch (e) {
+        statusEl.textContent = `❌ 上传失败: ${e.message}`;
+    }
+});
+</script>
+{% endblock %}

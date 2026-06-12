@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Personal Career Plan Agent{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <div id="app">
+        <nav id="sidebar">
+            <div class="sidebar-header">
+                <h2>🎯 职业规划助手</h2>
+            </div>
+            <div class="sidebar-actions">
+                <button class="quick-action" data-prompt="帮我看看简历有什么可以优化的">📝 优化简历</button>
+                <button class="quick-action" data-prompt="帮我分析下这个岗位匹配度">🔍 匹配岗位</button>
+                <button class="quick-action" data-prompt="这个岗位面试会问什么，帮我准备">🎤 模拟面试</button>
+            </div>
+            <div class="sidebar-files" id="file-list">
+                <h3>📂 文件</h3>
+                <div id="files-container">加载中...</div>
+            </div>
+            <div class="sidebar-footer">
+                <a href="/settings">⚙️ 设置</a>
+            </div>
+        </nav>
+
+        <main id="main-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script>
+    // 全局函数：发送消息（由各页面 override 实现）
+    window.sendMessage = window.sendMessage || function(msg) {
+        const input = document.getElementById('chat-input');
+        const btn = document.getElementById('send-btn');
+        if (input && btn) {
+            input.value = msg;
+            btn.click();
+        }
+    };
+
+    // 快捷操作按钮 —— 每次页面都可点到，不依赖子模板
+    document.querySelectorAll('.quick-action').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const prompt = btn.dataset.prompt;
+            if (prompt) window.sendMessage(prompt);
+        });
+    });
+
+    // 加载文件列表
+    async function loadFiles() {
+        const container = document.getElementById('files-container');
+        if (!container) return;
+        try {
+            const resp = await fetch('/api/files?directory=resumes');
+            const data = await resp.json();
+            container.innerHTML = data.files.length
+                ? data.files.map(f => `<div class="file-item">📄 ${f}</div>`).join('')
+                : '<div class="file-item">暂无文件</div>';
+        } catch (e) {
+            container.innerHTML = '<div class="file-item">加载失败</div>';
+        }
+    }
+    document.addEventListener('DOMContentLoaded', loadFiles);
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Settings — Personal Career Plan Agent{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <h1>⚙️ 设置</h1>
+
+    <div class="settings-section">
+        <h2>用户画像</h2>
+        <p class="help-text">以下信息会注入 Agent 上下文，帮助提供更个性化的建议</p>
+
+        <form id="profile-form" onsubmit="saveProfile(event)">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>姓名</label>
+                    <input name="name" value="{{ profiles.get('name', '') }}">
+                </div>
+                <div class="form-group">
+                    <label>学校</label>
+                    <input name="school" value="{{ profiles.get('school', '') }}">
+                </div>
+                <div class="form-group">
+                    <label>专业</label>
+                    <input name="major" value="{{ profiles.get('major', '') }}">
+                </div>
+                <div class="form-group">
+                    <label>毕业年份</label>
+                    <input name="graduation_year" value="{{ profiles.get('graduation_year', '') }}">
+                </div>
+                <div class="form-group">
+                    <label>教育背景</label>
+                    <input name="education" value="{{ profiles.get('education', '') }}" placeholder="如：本科/硕士/博士">
+                </div>
+                <div class="form-group">
+                    <label>技能栈</label>
+                    <input name="skills" value="{{ profiles.get('skills', '') }}" placeholder="逗号分隔，如：Python, SQL, React">
+                </div>
+                <div class="form-group">
+                    <label>目标行业</label>
+                    <input name="target_industry" value="{{ profiles.get('target_industry', '') }}" placeholder="如：互联网、金融、咨询">
+                </div>
+                <div class="form-group">
+                    <label>目标城市</label>
+                    <input name="target_city" value="{{ profiles.get('target_city', '') }}">
+                </div>
+                <div class="form-group">
+                    <label>期望薪资</label>
+                    <input name="salary_expectation" value="{{ profiles.get('salary_expectation', '') }}">
+                </div>
+                <div class="form-group">
+                    <label>公司偏好</label>
+                    <input name="company_preference" value="{{ profiles.get('company_preference', '') }}" placeholder="如：大厂、外企、创业公司">
+                </div>
+            </div>
+            <div class="form-group full-width">
+                <label>自我描述</label>
+                <textarea name="self_summary" rows="3">{{ profiles.get('self_summary', '') }}</textarea>
+            </div>
+            <button type="submit" class="btn-primary">💾 保存画像</button>
+            <span id="profile-status"></span>
+        </form>
+    </div>
+
+    <div class="settings-section">
+        <h2>系统信息</h2>
+        <p>当前模型：<code>{{ model }}</code></p>
+        <p>配置方式：编辑 <code>.env</code> 文件</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function saveProfile(e) {
+    e.preventDefault();
+    const form = document.getElementById('profile-form');
+    const formData = new FormData(form);
+    const data = {};
+    formData.forEach((v, k) => { if (v) data[k] = v; });
+
+    const status = document.getElementById('profile-status');
+    try {
+        const resp = await fetch('/api/profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+        if (resp.ok) {
+            status.textContent = '✅ 已保存';
+        } else {
+            status.textContent = '❌ 保存失败';
+        }
+    } catch (e) {
+        status.textContent = `❌ ${e.message}`;
+    }
+}
+</script>
+{% endblock %}
