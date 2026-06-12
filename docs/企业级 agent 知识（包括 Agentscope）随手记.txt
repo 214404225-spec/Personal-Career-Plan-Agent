@@ -6,3 +6,4 @@ Agentscope Studio 中的调试信息：遵循 OpenAI Chat Completions API 格式
 
 HITL：Human-In-The-Loop（人在关键决策节点介入审批或干预）。在 Agentscope 中，采用的是权限三态决策（允许 grant、拒绝 deny、审批 ask）。
 
+中间件钩子 Middleware Hook：AgentScope 框架在智能体（Agent）运行过程中预设的“拦截点”。作用主要是允许开发者在 agent 执行的关键节点（如推理前、调用模型时、处理消息时等）插入自定义代码，从而改变或监控智能体的行为，而无需修改智能体核心逻辑，以实现日志记录、数据清洗、权限检查、行为修改等功能。
