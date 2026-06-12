@@ -1,0 +1,20 @@
+推理与规划：ReAct（Reasoning + Acting）、Plan-and-Execute（先规划再执行）、Tree of Thoughts（思维树）、MCTS（蒙特卡洛树搜索）、Reflection（自我反思与纠错）、任务分解策略（子任务模板化 SOP，即让LLM在固定状态机中流转；Human-in-the-Loop HITL，即在 Planner 生成任务列表后中断执行并要求人类用户进行确认、修改或审批；RLHF 后训练）
+
+Agent 架构：①单 Agent 循环（即 ReAct），最主要的瓶颈是随着任务推进上下文的不断增长直至触达上下文窗口的限制；②Plan-and-Execute（即 CLAUDE CODE Plan Mode），代价是增加了推理轮次，因此对于简单任务来说反而是一种浪费；③多 Agent（Orchestrator + sub-agent），每个sub-agent拥有独立的上下文窗口（这个是核心优势），也分为 sub-agent（完成一个任务后即销毁）与 agent teams（多个独立的 agent 实例长时间协作），主要成本是编排开销，如果每个子任务都只需1-2步，此时用单 agent更合适；④反思与自我修正（Reflection），再次调用同一个LLM or 额外引入一个评判者LLM（Critic）去评估生成质量，成本是会明显增加延迟，此外必须要设置反思次数上限（避免陷入死循环）；⑤RAG + Agent，由 Agent 自主判断在推理的哪个环节需要补充知识、需要检索什么，并可以多次查询知识库，直到获得足够的信息来完成任务（普通 RAG 只能在用户提问时固定一次并将结果塞入Prompt），成本是有向量数据库的维护成本 & 增加的延迟；⑥工作流编排（Workflow / 有向无环图 DAG / 状态机），此种架构中的 Agent 的自主决策空间被限制在单个节点内部，节点之间的流转方向与顺序是预先定义好的且不可更改，有向无环图 DAG 单向流动且没有循环，状态机支持循环适合复杂的业务逻辑编排。
+
+MCP：定义了标准化的数据格式和通信协议，实现了LLM与外部资源的交互；使用 JSON-RPC 2.0 作为消息格式；支持多种传输机制，包括本地标准输入/输出（stdio）与基于HTTP的服务器发送事件（SSE）；生命周期包括初始化、运行、关闭三个阶段；定义了三种基本消息类型（请求Requests、响应Responses、通知Notifications）；优点是功能扩展、兼具灵活性&开放性，缺点是复杂性（需要设计和维护与外部资源的交互逻辑）、额外性能开销。
+
+Skill：由 Anthropic 公司在 2025 年 10 月 16 日提出的产品概念，随后开源并成为AI 行业的一项标准，只要skill.md + .md文档开头有YAML格式的元数据（“name”、“description”）就能被视作Skill。虽然Skill本质仍然是prompt，但其具备渐进式披露（Progressive Disclosure）的机制（一开始只加载文档开头的元数据，当Agent调用这个Skill时才去读取Skill.md的剩余内容，然后根据Skill.md剩余内容的指示去读取Skill文件夹下的其它文件），免于大模型一开始就读取过多的信息从而导致的上下文窗口不必要的过度填充。根据实践经验，Skill的数量并非越多越好，模型具有一定的创造能力（可理解为自行选择tool而非现成Skill指示的tool搭配去解决问题的能力），如果Skill的数量过多，就会“强迫”模型去选择现有的Skill指示去解决问题，且过于大量的Skill容易导致“幻觉”从而选择错误的Skill去解决问题。
+
+Function Calling：LLM 输出结构化 JSON -> 外部程序根据 JSON 执行 -> 结果喂回 LLM 的过程，即在 API 请求里附上 tools 数组，LLM 被训练为能按需输出 tool_calls JSON，你的程序截获它、执行、把结果插回对话。Function Calling 是 Agentic 能力的最小原子单位，所有更复杂的 Agent 行为都是在它上面叠加的【Layer 3 (规划与反思) -> Layer 2 (ReAct 循环) -> Layer 1 (Function Calling) -> Layer 0 (文本生成)】。
+
+Agentic 训练目标：何时调用、选哪个、参数填对、多步串联（前一步结果做后一步输入）、纠错重试、并行调用、终止判断
+
+FastAPI：HTTP API 服务（/chat SSE流式、/upload）、静态页面托管、WebSocket/SSE 实时推送，可以起到浏览器和本地 Agent 之间的桥梁作用。
+
+
+
+
+
+
+

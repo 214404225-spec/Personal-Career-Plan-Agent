@@ -1,0 +1,11 @@
+RAG 基本结构：离线索引流水线 + 在线查询流水线
+
+四种基本 chunk 策略：固定大小切分（通用文本）、递归字符切分（结构化文本，如mardown、代码等）、语义切分（长文档、书籍）、父子文档检索（全面覆盖场景）。此外在实践中常引入重叠策略，即相邻块之间共享若干字符，防止重要信息在边界处被截断。
+
+GraphRAG：引入知识图谱。核心三步骤（①知识构建，提取主体-关系-客体三元组；②双路检索，向量检索+图遍历检索；③图文融合生成），主要用于诸如"找到所有同时由现任 CEO 创办且市值超千亿的公司"这类需要跨文档、多跳推理的复杂问题。
+数据库 / 工具 选型：Pinecone / Zilliz Cloud - 全托管云服务，Qdrant - 开源 + 托管（Rust编写），Weaviate / Elasticsearch - 开源 + 托管（自带向量+关键词混合检索），Milvus - 开源分布式（十亿至百亿级别的超大规模企业级检索平台），Chroma（完整的向量数据库） / FAISS（底层搜索引擎） - 本地库（极轻量，适合本地开发 / 个人使用）
+
+RAGAS 评价体系: Faithfulness（LLM是否：在幻觉，凭空捏造）、Answer Relevancy（LLM是否：答非所问，离题了）、Context Precision（检索噪音是否太多）、Context Recall（重要文档是否被召回）
+
+Cross-Encoder vs. Bi-Encoder：Bi-Encoder 工作过程为 文本分别输入模型 -> 变成两个独立的向量 -> 直接计算两个向量的相似度，是向量级别的空间距离计算；Cross-Encoder 工作过程为 文本拼接 -> 一起输入模型 -> 直接输出相关性分数，是token级别的深度交叉比对。Cross-Encoder 的注意力机制本质是 Self-Attention（当问题和文档拼接后，模型内部的 Self-Attention 会让序列中的所有 token 双向互相作为 Q、K、V 进行计算，即问题的 token 关注文档的 token，文档的 token 也关注问题的 token）。
+

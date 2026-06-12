@@ -1,0 +1,8 @@
+Redis 三种作用：①中间件，介于 APP 与 MySQL 之间，起到缓存的作用。②内存数据库（主存储）—— 数据存在内存里（不是硬盘），所以读写极快。不用Redis而是将对话 session 数据存到本地文件夹，那对话 session 数据就留在那台机器上；用 Redis，session 数据存到 Redis 服务里，换个 JVM 进程、甚至换台机器（只要连同一个 Redis），都能恢复之前的对话上下文；即意味着，演示时，关掉程序再重开，之前的对话记忆还在（因为 Redis 帮你记着）。不用 Redis 的话，关了程序对话就丢了。③消息队列 / 协调器
+
+Agentscope Studio 中的调试信息：遵循 OpenAI Chat Completions API 格式 + AgentScope 的扩展字段（即CoT）。
+
+生产级版本管理：Alpha (内测) -> Beta (公测) -> RC (Release Candidate)1 -> RC (Release Candidate)2 -> GA (General Availability)。
+
+HITL：Human-In-The-Loop（人在关键决策节点介入审批或干预）。在 Agentscope 中，采用的是权限三态决策（允许 grant、拒绝 deny、审批 ask）。
+
